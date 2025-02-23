@@ -1,26 +1,54 @@
-<?php include 'db.php'; ?>
 <?php
-if (isset($_GET['id'])) {
-    $id = $_GET['id'];
-    $stmt = $conn->prepare("SELECT * FROM tickets WHERE id = :id");
-    $stmt->bindParam(':id', $id);
-    $stmt->execute();
-    $ticket = $stmt->fetch(PDO::FETCH_ASSOC);
+session_start();
+include 'db.php';
+include 'mail_config.php'; // Inclure la configuration de PHPMailer
+
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'technicien') {
+    header('Location: login.php');
+    exit();
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $id = $_POST['id'];
     $status = $_POST['status'];
 
+    // Mettre à jour le statut du ticket
     $stmt = $conn->prepare("UPDATE tickets SET status = :status WHERE id = :id");
     $stmt->bindParam(':status', $status);
     $stmt->bindParam(':id', $id);
 
     if ($stmt->execute()) {
-        echo "<div class='alert alert-success mt-3'>Ticket mis à jour avec succès !</div>";
+        // Récupérer les détails du ticket et l'e-mail de l'émetteur
+        $stmt = $conn->prepare("SELECT t.title, u.username FROM tickets t JOIN users u ON t.emitter_id = u.id WHERE t.id = :id");
+        $stmt->bindParam(':id', $id);
+        $stmt->execute();
+        $ticket = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        // Envoyer une notification par e-mail
+        $to = $ticket['username']; // Supposons que l'e-mail est stocké dans le champ 'username'
+        $subject = "Mise à jour du ticket : {$ticket['title']}";
+        $body = "Le statut de votre ticket a été mis à jour :<br><br>
+                 <strong>Titre :</strong> {$ticket['title']}<br>
+                 <strong>Nouveau statut :</strong> $status<br><br>
+                 Connectez-vous pour voir les détails.";
+
+        if (sendEmail($to, $subject, $body)) {
+            echo "<div class='alert alert-success mt-3'>Statut mis à jour et notification envoyée !</div>";
+        } else {
+            echo "<div class='alert alert-warning mt-3'>Statut mis à jour, mais l'envoi de la notification a échoué.</div>";
+        }
     } else {
-        echo "<div class='alert alert-danger mt-3'>Erreur lors de la mise à jour du ticket.</div>";
+        echo "<div class='alert alert-danger mt-3'>Erreur lors de la mise à jour du statut.</div>";
     }
+}
+
+// Récupérer les détails du ticket
+if (isset($_GET['id'])) {
+    $id = $_GET['id'];
+    $stmt = $conn->prepare("SELECT * FROM tickets WHERE id = :id");
+    $stmt->bindParam(':id', $id);
+    $stmt->execute();
+    $ticket = $stmt->fetch(PDO::FETCH_ASSOC);
 }
 ?>
 <!DOCTYPE html>
