@@ -27,6 +27,15 @@ CREATE TABLE ratings (
     FOREIGN KEY (technician_id) REFERENCES users(id)
 );
 
+CREATE TABLE email_queue (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    `to` VARCHAR(255) NOT NULL,
+    subject VARCHAR(255) NOT NULL,
+    body TEXT NOT NULL,
+    sent TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 ALTER TABLE tickets
 ADD COLUMN emitter_id INT NOT NULL,
 ADD COLUMN technician_id INT,
