@@ -29,15 +29,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $technician = $stmt->fetch(PDO::FETCH_ASSOC);
 
         // Envoyer une notification par e-mail
-        $to = $technician['username']; // Supposons que l'e-mail est stocké dans le champ 'username'
+        $to = $technician['username'];
         $subject = "Nouveau ticket assigné : $title";
-        $body = "Un nouveau ticket vous a été assigné :<br><br>
-                 <strong>Titre :</strong> $title<br>
-                 <strong>Description :</strong> $description<br><br>
-                 Connectez-vous pour voir les détails.";
-
+        $body = loadEmailTemplate('new_ticket.html', [
+        'title' => $title,
+        'description' => $description,
+        ]);
+        
         if (sendEmail($to, $subject, $body)) {
-            echo "<div class='alert alert-success mt-3'>Ticket créé avec succès et notification envoyée !</div>";
+        echo "<div class='alert alert-success mt-3'>Ticket créé avec succès et notification envoyée !</div>";
         } else {
             echo "<div class='alert alert-warning mt-3'>Ticket créé, mais l'envoi de la notification a échoué.</div>";
         }
