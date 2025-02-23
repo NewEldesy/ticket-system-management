@@ -1,4 +1,34 @@
-<?php include 'db.php'; ?>
+<?php
+session_start();
+include 'db.php';
+
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'emetteur') {
+    header('Location: login.php');
+    exit();
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $title = $_POST['title'];
+    $description = $_POST['description'];
+    $technician_id = $_POST['technician_id'];
+    $emitter_id = $_SESSION['user_id'];
+
+    $stmt = $conn->prepare("INSERT INTO tickets (title, description, emitter_id, technician_id) VALUES (:title, :description, :emitter_id, :technician_id)");
+    $stmt->bindParam(':title', $title);
+    $stmt->bindParam(':description', $description);
+    $stmt->bindParam(':emitter_id', $emitter_id);
+    $stmt->bindParam(':technician_id', $technician_id);
+
+    if ($stmt->execute()) {
+        echo "<div class='alert alert-success mt-3'>Ticket créé avec succès !</div>";
+    } else {
+        echo "<div class='alert alert-danger mt-3'>Erreur lors de la création du ticket.</div>";
+    }
+}
+
+// Récupérer la liste des techniciens
+$technicians = $conn->query("SELECT * FROM users WHERE role = 'technicien'")->fetchAll(PDO::FETCH_ASSOC);
+?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -19,25 +49,16 @@
                 <label for="description" class="form-label">Description</label>
                 <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
             </div>
+            <div class="mb-3">
+                <label for="technician_id" class="form-label">Technicien</label>
+                <select class="form-select" id="technician_id" name="technician_id" required>
+                    <?php foreach ($technicians as $technician) : ?>
+                        <option value="<?php echo $technician['id']; ?>"><?php echo $technician['username']; ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
             <button type="submit" class="btn btn-primary">Créer</button>
         </form>
-
-        <?php
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $title = $_POST['title'];
-            $description = $_POST['description'];
-
-            $stmt = $conn->prepare("INSERT INTO tickets (title, description) VALUES (:title, :description)");
-            $stmt->bindParam(':title', $title);
-            $stmt->bindParam(':description', $description);
-
-            if ($stmt->execute()) {
-                echo "<div class='alert alert-success mt-3'>Ticket créé avec succès !</div>";
-            } else {
-                echo "<div class='alert alert-danger mt-3'>Erreur lors de la création du ticket.</div>";
-            }
-        }
-        ?>
     </div>
 </body>
 </html>
