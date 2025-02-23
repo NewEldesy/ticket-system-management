@@ -25,16 +25,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $ticket = $stmt->fetch(PDO::FETCH_ASSOC);
 
         // Envoyer une notification par e-mail
-        $to = $ticket['username']; // Supposons que l'e-mail est stocké dans le champ 'username'
-        $subject = "Mise à jour du ticket : {$ticket['title']}";
-        $body = "Le statut de votre ticket a été mis à jour :<br><br>
-                 <strong>Titre :</strong> {$ticket['title']}<br>
-                 <strong>Nouveau statut :</strong> $status<br><br>
-                 Connectez-vous pour voir les détails.";
-
-        if (sendEmail($to, $subject, $body)) {
-            echo "<div class='alert alert-success mt-3'>Statut mis à jour et notification envoyée !</div>";
-        } else {
+        if ($status === 'ferme') {
+        $subject = "Ticket résolu : {$ticket['title']}";
+        $body = loadEmailTemplate('ticket_resolved.html', [
+            'title' => $ticket['title'],
+            'status' => $status,
+        ]);
+    
+        sendEmail($to, $subject, $body);
+    } else {
             echo "<div class='alert alert-warning mt-3'>Statut mis à jour, mais l'envoi de la notification a échoué.</div>";
         }
     } else {
